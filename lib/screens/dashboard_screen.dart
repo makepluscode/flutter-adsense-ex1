@@ -18,7 +18,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     'today': 0.0,
     'yesterday': 0.0,
     'lastWeek': 0.0,
-    'lastMonth': 0.0,
+    'lastWeekSameDay': 0.0,
+    'thisMonth': 0.0,
+    'previous7Days': 0.0
   };
   bool isLoading = true;
 
@@ -44,15 +46,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
       print(accounts.accounts);
       print('Account Name: $accountName');
 
+      final now = DateTime.now();
+      final startDate = now.subtract(const Duration(days: 31));
+
       final report = await adsenseApi.accounts.reports.generate(
         accountName,
         dateRange: 'CUSTOM',
-        startDate_year: 2024,
-        startDate_month: 12,
-        startDate_day: 1,
-        endDate_year: 2024,
-        endDate_month: 12,
-        endDate_day: 31,
+        startDate_year: startDate.year,
+        startDate_month: startDate.month,
+        startDate_day: startDate.day,
+        endDate_year: now.year,
+        endDate_month: now.month,
+        endDate_day: now.day,
         metrics: [
           'AD_REQUESTS',
           'PAGE_VIEWS',
@@ -90,12 +95,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
               dailyEarnings.values.elementAtOrNull(dailyEarnings.length - 2) ??
                   0.0;
 
-          final last7Days = dailyEarnings.values.toList().reversed.take(7);
+          final lastWeekSameDayEarning =
+              dailyEarnings.values.elementAtOrNull(dailyEarnings.length - 9) ??
+                  0.0;
+          earnings['lastWeekSameDay'] = lastWeekSameDayEarning;
+
+          // 최근 7일 수입
+          final last7Days =
+              dailyEarnings.values.toList().reversed.skip(1).take(7);
           earnings['lastWeek'] =
               last7Days.fold(0.0, (sum, value) => sum + value);
 
-          earnings['lastMonth'] =
-              dailyEarnings.values.fold(0.0, (sum, value) => sum + value);
+          // 이전 7일 수입 (7-14일 전)
+          final previous7Days =
+              dailyEarnings.values.toList().reversed.skip(7).take(7);
+          earnings['previous7Days'] =
+              previous7Days.fold(0.0, (sum, value) => sum + value);
+
+          final thisMonthEarnings = dailyEarnings.entries
+              .where((entry) {
+                final date =
+                    DateTime.parse(entry.key); // DATE 형식의 문자열을 DateTime으로 변환
+                return date.year == now.year &&
+                    date.month == DateTime.now().month;
+              })
+              .map((e) => e.value)
+              .fold(0.0, (sum, earning) => sum + earning);
+
+          earnings['thisMonth'] = thisMonthEarnings;
         });
       }
     } catch (e) {
@@ -130,33 +157,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 EarningCard(
-                  title: '오늘 현재까지',
-                  amount: earnings['today'] ?? 0,
-                  comparison: '어제',
-                  changeAmount:
-                      (earnings['today'] ?? 0) - (earnings['yesterday'] ?? 0),
-                ),
+                    title: '오늘 현재까지',
+                    amount: earnings['today'] ?? 0,
+                    comparison: null,
+                    changeAmount: null),
                 const SizedBox(height: 16),
                 EarningCard(
                   title: '어제',
                   amount: earnings['yesterday'] ?? 0,
-                  comparison: '지난 7일',
+                  comparison: '지난주 같은 요일',
                   changeAmount: (earnings['yesterday'] ?? 0) -
-                      ((earnings['lastWeek'] ?? 0) / 7),
+                      (earnings['lastWeekSameDay'] ?? 0),
+                  percentageChange: ((earnings['yesterday'] ?? 0) -
+                          (earnings['lastWeekSameDay'] ?? 0)) /
+                      (earnings['lastWeekSameDay'] ?? 1) *
+                      100, // 0으로 나누는 것 방지를 위해 1로 설정
                 ),
                 const SizedBox(height: 16),
                 EarningCard(
                   title: '지난 7일',
                   amount: earnings['lastWeek'] ?? 0,
-                  comparison: '이번 달',
-                  changeAmount: (earnings['lastWeek'] ?? 0),
+                  comparison: '이전 7일',
+                  changeAmount: (earnings['lastWeek'] ?? 0) -
+                      (earnings['previous7Days'] ?? 0),
+                  percentageChange: ((earnings['lastWeek'] ?? 0) -
+                          (earnings['previous7Days'] ?? 0)) /
+                      (earnings['previous7Days'] ?? 1) *
+                      100,
                 ),
                 const SizedBox(height: 16),
                 EarningCard(
                   title: '이번 달',
-                  amount: earnings['lastMonth'] ?? 0,
+                  amount: earnings['thisMonth'] ?? 0,
                   comparison: '지난 동기',
-                  changeAmount: (earnings['lastMonth'] ?? 0),
+                  changeAmount: (earnings['thisMonth'] ?? 0),
                 ),
               ],
             ),

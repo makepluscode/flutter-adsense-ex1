@@ -3,15 +3,17 @@ import 'package:flutter/material.dart';
 class EarningCard extends StatelessWidget {
   final String title;
   final double amount;
-  final String comparison;
-  final double changeAmount;
+  final String? comparison;
+  final double? changeAmount;
+  final double? percentageChange;
 
   const EarningCard({
-    super.key, // key 매개변수 추가
+    super.key,
     required this.title,
     required this.amount,
-    required this.comparison,
-    required this.changeAmount,
+    this.comparison,
+    this.changeAmount,
+    this.percentageChange,
   });
 
   @override
@@ -48,32 +50,31 @@ class EarningCard extends StatelessWidget {
               color: Colors.black,
             ),
           ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Icon(
-                changeAmount >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
-                color: changeAmount >= 0 ? Colors.green : Colors.red,
-                size: 14,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '+US\$${changeAmount.abs().toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: changeAmount >= 0 ? Colors.green : Colors.red,
-                  fontWeight: FontWeight.w500,
+          if (comparison != null &&
+              changeAmount != null &&
+              percentageChange != null) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(
+                  changeAmount! >= 0
+                      ? Icons.arrow_upward
+                      : Icons.arrow_downward,
+                  color: changeAmount! >= 0 ? Colors.green : Colors.red,
+                  size: 14,
                 ),
-              ),
-              Text(
-                ' vs $comparison',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.black54,
+                const SizedBox(width: 4),
+                Text(
+                  '+US\$${changeAmount!.abs().toStringAsFixed(2)} (${percentageChange!.abs().toStringAsFixed(0)}%) vs $comparison',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: changeAmount! >= 0 ? Colors.green : Colors.red,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
       ),
     );

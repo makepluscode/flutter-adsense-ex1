@@ -6,13 +6,9 @@ class Environment {
     if (kIsWeb) {
       try {
         final env = js_util.getProperty(js_util.globalThis, 'env');
-        if (env != null) {
-          return js_util.getProperty(env, 'GOOGLE_CLIENT_ID') ?? '';
-        }
-        print('Environment variables are not set in window.env');
-        return '';
+        return js_util.getProperty(env, 'GOOGLE_CLIENT_ID') ?? '';
       } catch (e) {
-        print('Error reading environment variables: $e');
+        print('Error: $e');
         return '';
       }
     }
